@@ -5,17 +5,38 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="4dp">
 
-    <TextView
-        android:id="@+id/textSentMessage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/background_sent_message"
-        android:padding="10dp"
-        android:textColor="@color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.8"
-        />
+
+    <LinearLayout
+        android:id="@+id/llS"
+        android:layoutDirection="rtl"
+        android:weightSum="1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:layout_weight="0.25"
+            android:id="@+id/textSentMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/background_sent_message"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:paddingRight="5dp"
+            android:paddingLeft="5dp"
+            android:textDirection="ltr"
+            android:lineSpacingExtra="4dp"
+            android:textColor="@color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            />
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.75"
+            />
+
+    </LinearLayout>
+
     
     <TextView
         android:id="@+id/textSentDateTime"
@@ -25,7 +46,7 @@
         android:textColor="@color/black"
         android:textSize="10dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textSentMessage"
+        app:layout_constraintTop_toBottomOf="@+id/llS"
         />
     
 </androidx.constraintlayout.widget.ConstraintLayout>

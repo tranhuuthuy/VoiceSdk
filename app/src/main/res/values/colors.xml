@@ -2,9 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="primary">#1A2E7C</color>
+    <color name="primary">#F6F6F6</color>
     <color name="send">#3F51B5</color>
 
-    <color name="item_sent">#3F51B5</color>
-    <color name="item_received">#E91E63</color>
+    <color name="background_send">#E4B3CC</color>
+
+    <color name="item_sent">#E99898</color>
+    <color name="item_received">#FFFFFF</color>
 </resources>

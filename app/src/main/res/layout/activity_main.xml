@@ -22,29 +22,54 @@
         android:layout_height="1dp"
         tools:ignore="MissingConstraints" />
 
+    <!--    <androidx.appcompat.widget.AppCompatImageView-->
+<!--        android:id="@+id/imageBack"-->
+<!--        android:layout_width="40dp"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:layout_marginLeft="10dp"-->
+<!--        android:layout_marginStart="10dp"-->
+<!--        android:layout_marginTop="10dp"-->
+<!--        android:padding="8dp"-->
+<!--        android:src="@drawable/ic_tla"-->
+<!--        android:background="@drawable/backround_image"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toTopOf="parent"-->
+<!--        />-->
+
     <View
         android:id="@+id/viewBackground"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="50dp"
-        android:layout_marginBottom="20dp"
-        android:background="@drawable/rounded_view"
-        app:layout_constraintBottom_toTopOf="@id/layoutSend"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toTopOf="@id/inputMessage"
+        app:layout_constraintTop_toBottomOf="@id/imageIc"
         app:layout_constraintVertical_bias="0.0"
         tools:layout_editor_absoluteX="0dp" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/imageBack"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
-        android:padding="8dp"
-        android:src="@drawable/ic_info"
+    <com.makeramen.roundedimageview.RoundedImageView
+        android:id="@+id/imageIc"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:background="@drawable/backround_image"
+        android:src="@mipmap/ic_launcher_round"
+            android:layout_marginLeft="10dp"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="50dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:riv_oval="true"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Trợ lý ảo VoiceBot"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toBottomOf="@id/imageIc"
+        app:layout_constraintStart_toEndOf="@id/imageIc"
+
         />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -55,9 +80,10 @@
         android:orientation="vertical"
         android:overScrollMode="never"
         android:padding="10dp"
+        android:layout_marginTop="30dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_constraintBottom_toBottomOf="@id/viewBackground"
-        app:layout_constraintTop_toBottomOf="@id/imageBack"
+        app:layout_constraintTop_toBottomOf="@id/imageIc"
         android:visibility="gone">
     </androidx.recyclerview.widget.RecyclerView>
 
@@ -73,11 +99,12 @@
 
     <FrameLayout
         android:id="@+id/layoutSend"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
         android:layout_marginEnd="20dp"
         android:layout_marginRight="20dp"
-        android:layout_marginBottom="30dp"
+        android:layout_marginBottom="55dp"
+        app:layout_constraintStart_toEndOf="@id/inputMessage"
         android:background="@color/primary"
 
         app:layout_constraintBottom_toBottomOf="parent"
@@ -88,8 +115,8 @@
             android:layout_marginStart="0dp"
             android:layout_marginLeft="0dp"
             android:padding="0dp"
-            android:src="@drawable/ic_send"
-            android:tint="@color/white"/>
+            android:src="@drawable/sent"
+            />
     </FrameLayout>
 
     <EditText
@@ -100,15 +127,18 @@
         android:layout_marginLeft="20dp"
         android:layout_marginEnd="10dp"
         android:layout_marginRight="10dp"
-        android:layout_marginBottom="30dp"
+        android:layout_marginBottom="50dp"
         android:background="@drawable/rounded_edittext"
-        android:hint="Type a message"
+        android:hint="Xin chào, Vian có thể giúp được gì cho quý khách"
+        android:textSize="15dp"
+        android:ellipsize="end"
         android:imeOptions="actionDone"
         android:importantForAutofill="no"
         android:inputType="text"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:textColor="@color/black"
+
         android:textColorHint="@color/material_on_background_emphasis_high_type"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/layoutSend"
@@ -119,12 +149,13 @@
         android:id="@+id/mic"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="20dp"
         android:layout_marginEnd="36dp"
-        android:src="@drawable/mic"
+        android:src="@drawable/podcast"
         android:background="@drawable/background_mic"
-        app:layout_constraintEnd_toEndOf="@+id/viewBackground"
-        app:layout_constraintTop_toTopOf="@+id/viewBackground" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+   />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
