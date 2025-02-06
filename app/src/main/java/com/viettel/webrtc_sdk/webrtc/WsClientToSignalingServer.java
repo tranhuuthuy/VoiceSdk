@@ -83,7 +83,7 @@ public abstract class WsClientToSignalingServer {
 
     public void sendMessage(String message){
         ws.send(message);
-        Log.d(TAG,"[WsClientToSignalingServer::sendMessage] " + message);
+        Log.d(TAG,"[MediaWsClientToSignalingServer::sendMessage] " + message);
     }
 
     public void close(){

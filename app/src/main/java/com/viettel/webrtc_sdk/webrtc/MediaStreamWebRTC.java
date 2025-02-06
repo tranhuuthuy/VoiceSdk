@@ -70,14 +70,16 @@ public class MediaStreamWebRTC {
     private SurfaceViewRenderer localViewRender;
     private SurfaceViewRenderer remoteViewViewRender;
     private PeerConnectionFactory factory;
-    private PeerConnection localPeerConnection, remotePeerConnection;
+    private PeerConnection peerConnection;
     private WsClientToSignalingServer wsClient;
 
     public MediaStreamWebRTC(Activity activity, String uriToSignalingServer, int timeout,
                              int width, int height, int fps,
-                             JSONObject userInfo, String firstText) throws URISyntaxException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+                             JSONObject userInfo, String firstText,
+                             String turnServer, String user, String pass) throws URISyntaxException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         this.activity = activity;
         this.iceServers = new ArrayList<>();
+        addIceServer(turnServer, user, pass);
         this.videoResolutionWidth = width;
         this.videoResolutionHeight = height;
         this.fps = fps;
@@ -105,12 +107,11 @@ public class MediaStreamWebRTC {
 
         initializePeerConnections();
     }
-//
-//
-//    private void addIceServer(String iceServer) { // "stun:stun.l.google.com:19302"
-//        this.iceServers.add(PeerConnection.IceServer.builder(iceServer).setUsername("thuyth2").setPassword("1qaz").createIceServer());
-//        Log.d(TAG, "Add Ice Server " + iceServer);
-//    }
+
+    private void addIceServer(String iceServer, String user, String password) { // "stun:stun.l.google.com:19302"
+        this.iceServers.add(PeerConnection.IceServer.builder(iceServer).setUsername(user).setPassword(password).createIceServer());
+        Log.d(TAG, "Add Ice Server " + iceServer);
+    }
 
     private void initViewText() {
         activity.runOnUiThread(() -> {
@@ -202,8 +203,7 @@ public class MediaStreamWebRTC {
     }
 
     private void initializePeerConnections() {
-        this.localPeerConnection = createPeerConnection(factory, true, "local-connection");
-        this.remotePeerConnection = createPeerConnection(factory, false, "remote-connection");
+        this.peerConnection = createPeerConnection(factory, true, "Peer-connection");
     }
 
     private void handlerTextMessage(String message) {
@@ -214,9 +214,9 @@ public class MediaStreamWebRTC {
             switch (id) {
                 case "PROCESS_SDP_ANSWER":
                     String sdpAnswer = obj.getString("sdpAnswer");
-                    localPeerConnection.setRemoteDescription(new SimpleSdpObserver("local-peer-connection setRemoteDescription ANSWER"),
+                    peerConnection.setRemoteDescription(new SimpleSdpObserver("Peer-connection setRemoteDescription ANSWER"),
                             new SessionDescription(SessionDescription.Type.ANSWER, sdpAnswer));
-                    Log.d(TAG, "[connectToSignallingServer::onTextReceived] Local Peer Connection set remote description");
+                    Log.d(TAG, "[connectToSignallingServer::onTextReceived] Peer Connection set remote description");
                     break;
                 case "ADD_ICE_CANDIDATE":
                     JSONObject candidateJson = new JSONObject(obj.getString("candidate"));
@@ -224,7 +224,7 @@ public class MediaStreamWebRTC {
                     int sdpMLineIndex = candidateJson.getInt("sdpMLineIndex");
                     String sdp = candidateJson.getString("candidate");
                     IceCandidate candidate = new IceCandidate(sdpMid, sdpMLineIndex, sdp);
-                    remotePeerConnection.addIceCandidate(candidate);
+                    peerConnection.addIceCandidate(candidate);
                     Log.d(TAG, "remote-peer-connection add candidate");
                     break;
                 case "ADD_MESSAGE":
@@ -295,25 +295,16 @@ public class MediaStreamWebRTC {
         MediaStream mediaStream = factory.createLocalMediaStream("ARDAMS");
         mediaStream.addTrack(videoTrackFromCamera);
         mediaStream.addTrack(audioTrackFromMicrophone);
-        this.localPeerConnection.addStream(mediaStream);
+        this.peerConnection.addStream(mediaStream);
 
         // create offer from local peer connection
-        this.localPeerConnection.createOffer(new SimpleSdpObserver("local-peer-connection create offer") {
+        this.peerConnection.createOffer(new SimpleSdpObserver("Peer-connection create offer") {
             @Override
             public void onCreateSuccess(SessionDescription sdp) {
                 super.onCreateSuccess(sdp);
                 Log.d(TAG, "[generateOffer::onCreateSuccess] localPeerConnection " + sdp);
                 // set info sdp
-                localPeerConnection.setLocalDescription(new SimpleSdpObserver("local-peer-connection onCreateSuccess"), sdp);
-                remotePeerConnection.setRemoteDescription(new SimpleSdpObserver("remote-peer-connection onCreateSuccess") {
-                    @Override
-                    public void onCreateSuccess(SessionDescription sessionDescription) {
-                        super.onCreateSuccess(sessionDescription);
-                        remotePeerConnection.setLocalDescription(new SimpleSdpObserver(), sessionDescription);
-                        localPeerConnection.setRemoteDescription(new SimpleSdpObserver(), sessionDescription);
-                        Log.d(TAG, "remotePeerConnection setRemoteDescription onCreateSuccess");
-                    }
-                }, sdp);
+                peerConnection.setLocalDescription(new SimpleSdpObserver("Peer-connection onCreateSuccess"), sdp);
 
                 //  gathering
                 answer();
@@ -343,25 +334,24 @@ public class MediaStreamWebRTC {
     }
 
     public void answer() {
-        this.remotePeerConnection.createAnswer(new SimpleSdpObserver("remote-peer-connection create answer") {
+        this.peerConnection.createAnswer(new SimpleSdpObserver("Peer-connection create answer") {
             @Override
             public void onCreateSuccess(SessionDescription sdp) {
                 super.onCreateSuccess(sdp);
-                remotePeerConnection.setLocalDescription(new SimpleSdpObserver("remote-peer-connection setLocalDescription"), sdp);
+                peerConnection.setRemoteDescription(new SimpleSdpObserver("Peer-connection setLocalDescription"), sdp);
             }
         }, new MediaConstraints());
     }
 
     private PeerConnection createPeerConnection(PeerConnectionFactory factory, boolean isLocal, String label) {
         PeerConnection.RTCConfiguration rtcConfig = new PeerConnection.RTCConfiguration(iceServers);
-        PeerConnection peerConnection = factory.createPeerConnection(rtcConfig, new PeerObserverImpl(label) {
+        PeerConnection peerConn = factory.createPeerConnection(rtcConfig, new PeerObserverImpl(label) {
                     @Override
                     public void onIceCandidate(IceCandidate iceCandidate) {
                         super.onIceCandidate(iceCandidate);
 
                         // send information local candidate
                         if (isLocal) {
-                            localPeerConnection.addIceCandidate(iceCandidate);
                             try {
                                 JSONObject obj = new JSONObject();
                                 obj.put("id", "ADD_ICE_CANDIDATE");
@@ -373,7 +363,7 @@ public class MediaStreamWebRTC {
 
                                 obj.put("candidate", candidate);
                                 wsClient.sendMessage(obj.toString());
-                                Log.d(TAG, "Local peer connection send candidate");
+                                Log.d(TAG, "Peer connection send candidate");
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 Log.e(TAG, "onIceCandidate error" + e.getMessage());
@@ -396,7 +386,6 @@ public class MediaStreamWebRTC {
                 }
         );
 
-        return peerConnection;
+        return peerConn;
     }
-
 }

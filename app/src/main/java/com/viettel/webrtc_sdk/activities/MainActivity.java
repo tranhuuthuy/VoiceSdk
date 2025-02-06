@@ -3,7 +3,6 @@ package com.viettel.webrtc_sdk.activities;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.VideoView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.RequiresApi;
@@ -11,14 +10,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import com.viettel.webrtc_sdk.R;
-import com.viettel.webrtc_sdk.adapters.MessageAdapter;
-import com.viettel.webrtc_sdk.models.Message;
-import com.viettel.webrtc_sdk.webrtc.MediaStreamWebRTC;
 
-import java.util.ArrayList;
+import com.viettel.webrtc_sdk.R;
+import com.viettel.webrtc_sdk.webrtc.MediaStreamWebRTC;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,12 +27,15 @@ public class MainActivity extends AppCompatActivity {
         try {
             MediaStreamWebRTC mediaStreamWebRTC = new MediaStreamWebRTC(
                     this,
-                    "wss://192.168.16.137:8002/voicebotv2",
+//                    "wss://10.61.152.49:8002/voicebotv2",
+//                    "wss://192.168.16.137:8002/voicebotv2",
+                    "wss://171.244.195.82:8111/voicebotv2",
                     20000,
                     1280,
                     720,
                     30,
-                    null, null
+                    null, null,
+                    "turn:171.244.195.82:8889", "thuyth2", "1qaz"
             );
             mediaStreamWebRTC.offer();
         } catch (Exception e) {
