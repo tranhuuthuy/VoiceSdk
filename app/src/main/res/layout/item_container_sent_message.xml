@@ -1,52 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="4dp">
 
 
-    <LinearLayout
-        android:id="@+id/llS"
-        android:layoutDirection="rtl"
-        android:weightSum="1"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
 
-        <TextView
-            android:layout_weight="0.25"
-            android:id="@+id/textSentMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/background_sent_message"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:paddingRight="5dp"
-            android:paddingLeft="5dp"
-            android:textDirection="ltr"
-            android:lineSpacingExtra="4dp"
-            android:textColor="@color/white"
+        <com.makeramen.roundedimageview.RoundedImageView
+            android:id="@+id/imageProfileUser"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="5dp"
+            android:background="@color/primary"
+            android:src="@drawable/avt"
+            app:layout_constraintBottom_toBottomOf="@id/llS"
+
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            />
-        <View
+            app:riv_oval="true"
+            tools:ignore="MissingConstraints" />
+
+        <LinearLayout
+            android:id="@+id/llS"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="0.75"
-            />
+            android:weightSum="1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/imageProfileUser"
+            android:layout_marginRight="50dp"
+            tools:layout_editor_absoluteY="4dp"
+            tools:ignore="MissingConstraints">
 
-    </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="0.75" />
 
-    
+            <TextView
+                android:id="@+id/textSentMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.25"
+                android:background="@drawable/background_sent_message"
+                android:lineSpacingExtra="4dp"
+                android:paddingLeft="5dp"
+                android:paddingTop="10dp"
+                android:paddingRight="5dp"
+                android:paddingBottom="10dp"
+                android:text="Hãy giới thiệu về các gói cước 5G của Viettel"
+                android:textColor="@color/white"
+                android:textDirection="ltr"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </LinearLayout>
+
+
+
     <TextView
         android:id="@+id/textSentDateTime"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:text="HH:mm:ss"
         android:textColor="@color/black"
-        android:textSize="10dp"
+        android:textSize="8dp"
+        app:layout_constraintTop_toBottomOf="@id/imageProfileUser"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/llS"
         />
-    
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

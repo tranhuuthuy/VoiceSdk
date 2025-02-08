@@ -6,28 +6,31 @@
     android:layout_marginRight="10dp"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-<!--    <com.makeramen.roundedimageview.RoundedImageView-->
-<!--        android:id="@+id/imageProfile"-->
-<!--        android:layout_width="15dp"-->
-<!--        android:layout_height="15dp"-->
-<!--        android:background="@drawable/backround_image"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toBottomOf="@+id/textReceivedMessage"-->
-<!--        android:src="@mipmap/ic_launcher_round"-->
-<!--        app:riv_oval="true"-->
-<!--        />-->
+    <com.makeramen.roundedimageview.RoundedImageView
+        android:id="@+id/imageProfile"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginLeft="5dp"
+        android:background="@drawable/backround_image"
+        app:layout_constraintBottom_toBottomOf="@id/llR"
+        android:src="@mipmap/ic_bot"
+        app:riv_oval="true"
+        tools:ignore="MissingConstraints" />
 
     <LinearLayout
         android:id="@+id/llR"
         android:weightSum="1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        app:layout_constraintStart_toEndOf="@id/imageProfile"
         tools:ignore="MissingConstraints">
         <TextView
             android:layout_weight="0.25"
             android:id="@+id/textReceivedMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="Xin chào. Tôi là Vian, trợ lý ảo đáng tin cậy của Viettel. Bạn cần giúp gì hôm nay ?"
             android:background="@drawable/background_received_message"
             android:paddingTop="10dp"
             android:paddingBottom="10dp"
@@ -40,9 +43,8 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
         <View
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            />
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
     </LinearLayout>
 
 
@@ -52,10 +54,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:textColor="@color/black"
-        android:textSize="10dp"
+        android:textSize="8dp"
         android:text="HH:mm:ss"
         android:layout_marginLeft="4dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/llR" />
+        app:layout_constraintTop_toBottomOf="@id/imageProfile" />
     
 </androidx.constraintlayout.widget.ConstraintLayout>

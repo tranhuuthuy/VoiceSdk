@@ -1,16 +1,33 @@
 package com.viettel.webrtc_sdk.webrtc;
 
+import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
+
 import android.app.Activity;
+import android.content.Context;
+import android.media.AudioManager;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 
+import androidx.appcompat.widget.AppCompatImageView;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.makeramen.roundedimageview.RoundedImageView;
 import com.viettel.webrtc_sdk.R;
 import com.viettel.webrtc_sdk.adapters.MessageAdapter;
 import com.viettel.webrtc_sdk.models.Message;
+import com.viettel.webrtc_sdk.utils.VideoConfig;
+
+import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
+import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEventListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,22 +64,22 @@ public class MediaStreamWebRTC {
     public static final String TAG = "MediaStreamWebRTC";
     private static final String VIDEO_TRACK_ID = "01";
     private static final String AUDIO_TRACK_ID = "02";
-    public static final int VIDEO_RESOLUTION_WIDTH = 1280;
-    public static final int VIDEO_RESOLUTION_HEIGHT = 720;
-    public static final int FPS = 30;
-
-    private int videoResolutionWidth;
-    private int videoResolutionHeight;
-    private int fps;
-
+    public static final int VIDEO_RESOLUTION_WIDTH_DEFAULT = 1280;
+    public static final int VIDEO_RESOLUTION_HEIGHT_DEFAULT = 720;
+    public static final int FPS_DEFAULT = 30;
+    private VideoConfig videoConfig;
     private String firstText;
-
     private JSONObject userInfo;
 
     private Activity activity;
     RecyclerView recyclerView;
     ProgressBar progressBar;
     GifImageView gifImageView;
+    RoundedImageView buttonKeyBoard;
+    EditText inputText;
+    AppCompatImageView inputSent;
+
+    ConstraintLayout frameMicrophone;
     private EglBase rootEglBase;
     private List<PeerConnection.IceServer> iceServers;
     private VideoTrack videoTrackFromCamera;
@@ -74,15 +91,14 @@ public class MediaStreamWebRTC {
     private WsClientToSignalingServer wsClient;
 
     public MediaStreamWebRTC(Activity activity, String uriToSignalingServer, int timeout,
-                             int width, int height, int fps,
+                             VideoConfig videoConfig,
                              JSONObject userInfo, String firstText,
-                             String turnServer, String user, String pass) throws URISyntaxException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+                             TurnServer turnServer) throws URISyntaxException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         this.activity = activity;
         this.iceServers = new ArrayList<>();
-        addIceServer(turnServer, user, pass);
-        this.videoResolutionWidth = width;
-        this.videoResolutionHeight = height;
-        this.fps = fps;
+        assert turnServer != null : "TurnServer is NOT null";
+        addIceServer(String.format("turn:%s:%d", turnServer.getHost(), turnServer.getPort()), turnServer.getUsername(), turnServer.getPassword());
+        this.videoConfig = videoConfig;
         this.userInfo = userInfo;
 
         this.firstText = firstText == null || firstText.isEmpty() ? "Xin chào, tôi có thể giúp gì được cho bạn !" : firstText;
@@ -102,7 +118,9 @@ public class MediaStreamWebRTC {
 
         initializePeerConnectionFactory();
 
-        createVideoTrackFromCameraAndShowIt();
+        if (videoConfig != null) {
+            createVideoTrackFromCameraAndShowIt();
+        }
         createAudioTrackFromMicrophone();
 
         initializePeerConnections();
@@ -118,10 +136,15 @@ public class MediaStreamWebRTC {
             recyclerView = activity.findViewById(R.id.chatRecyclerView);
             progressBar = activity.findViewById(R.id.progressBar);
             gifImageView = activity.findViewById(R.id.mic);
-            Log.d(TAG, "progressBar " + progressBar);
+            buttonKeyBoard = activity.findViewById(R.id.keyboard);
+            inputText = activity.findViewById(R.id.inputMessage);
+            inputSent = activity.findViewById(R.id.sent);
+            frameMicrophone = activity.findViewById(R.id.mic_key);
+            initAction();
+
             ArrayList<Message> messages = new ArrayList<>();
             MessageAdapter messageAdapter = new MessageAdapter(messages);
-            recyclerView.setVisibility(RecyclerView.VISIBLE);
+            recyclerView.setVisibility(VISIBLE);
             LinearLayoutManager linearLayoutManager = new LinearLayoutManager(activity.getApplicationContext());
             recyclerView.setLayoutManager(linearLayoutManager);
             recyclerView.setAdapter(messageAdapter);
@@ -129,6 +152,46 @@ public class MediaStreamWebRTC {
                 messages.add(new Message(firstText, Message.Type.BOT));
             }
         });
+    }
+
+    private void initAction() {
+        //action keyboard on/off
+        KeyboardVisibilityEvent.setEventListener(activity, isOpen -> {
+            if (isOpen) {
+                onKeyboardShown();
+            } else {
+                onKeyboardHidden();
+            }
+        });
+
+        buttonKeyBoard.setOnClickListener(v -> {
+            inputText.setVisibility(VISIBLE);
+            inputSent.setVisibility(VISIBLE);
+            frameMicrophone.setVisibility(INVISIBLE);
+            inputText.requestFocus();
+
+            // Show the keyboard
+            InputMethodManager imm = (InputMethodManager) activity.getApplicationContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(inputText, InputMethodManager.SHOW_IMPLICIT);
+        });
+    }
+
+    private void onKeyboardShown() {
+        // Action to take when the keyboard is shown
+        Log.d(TAG, "Keyboard is open");
+        inputText.setVisibility(VISIBLE);
+        inputSent.setVisibility(VISIBLE);
+        frameMicrophone.setVisibility(INVISIBLE);
+
+    }
+
+    private void onKeyboardHidden() {
+        // Action to take when the keyboard is hidden
+        Log.d(TAG, "Keyboard is hidden");
+        inputText.setVisibility(INVISIBLE);
+        inputSent.setVisibility(INVISIBLE);
+        frameMicrophone.setVisibility(VISIBLE);
+
     }
 
     private void initializeSurfaceViews() {
@@ -179,12 +242,12 @@ public class MediaStreamWebRTC {
         videoCapturer.initialize(surfaceTextureHelper, activity.getApplicationContext(), videoSource.getCapturerObserver());
         Log.d(TAG, "VideoCapturer initialized");
 
-        if (videoResolutionWidth <= 0 || videoResolutionHeight <= 0 || fps <= 0) {
-            videoCapturer.startCapture(VIDEO_RESOLUTION_WIDTH, VIDEO_RESOLUTION_HEIGHT, FPS);
-            Log.d(TAG, "VideoCapturer started with resolution default " + VIDEO_RESOLUTION_WIDTH + "x" + VIDEO_RESOLUTION_HEIGHT + ", fps=" + FPS);
+        if (videoConfig == null || videoConfig.getWidth() <= 0 || videoConfig.getHeight() <= 0 || videoConfig.getFps() <= 0) {
+            videoCapturer.startCapture(VIDEO_RESOLUTION_WIDTH_DEFAULT, VIDEO_RESOLUTION_HEIGHT_DEFAULT, FPS_DEFAULT);
+            Log.d(TAG, "VideoCapturer started with resolution default " + VIDEO_RESOLUTION_WIDTH_DEFAULT + "x" + VIDEO_RESOLUTION_HEIGHT_DEFAULT + ", fps=" + FPS_DEFAULT);
         } else {
-            videoCapturer.startCapture(videoResolutionWidth, videoResolutionHeight, fps);
-            Log.d(TAG, "VideoCapturer started with resolution " + videoResolutionWidth + "x" + videoResolutionHeight + ", fps=" + fps);
+            videoCapturer.startCapture(videoConfig.getWidth(), videoConfig.getHeight(), videoConfig.getFps());
+            Log.d(TAG, "VideoCapturer started with resolution " + videoConfig.getWidth() + "x" + videoConfig.getHeight() + ", fps=" + videoConfig.getFps());
 
         }
 
@@ -197,6 +260,13 @@ public class MediaStreamWebRTC {
     }
 
     private void createAudioTrackFromMicrophone() {
+        // set external speaker
+        Context context = activity.getApplicationContext();
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setSpeakerphoneOn(true);
+        Log.d(TAG, "Set SpeakerPhone On");
+        // --------------------------------------
+
         AudioSource audioSource = this.factory.createAudioSource(new MediaConstraints());
         this.audioTrackFromMicrophone = this.factory.createAudioTrack(AUDIO_TRACK_ID, audioSource);
         this.audioTrackFromMicrophone.setEnabled(true);
@@ -268,24 +338,24 @@ public class MediaStreamWebRTC {
 
     private void invisibleProgressBar() {
         activity.runOnUiThread(() -> {
-            if (progressBar.getVisibility() == View.VISIBLE) {
-                progressBar.setVisibility(View.INVISIBLE);
+            if (progressBar.getVisibility() == VISIBLE) {
+                progressBar.setVisibility(INVISIBLE);
             }
         });
     }
 
     private void invisibleMic() {
         activity.runOnUiThread(() -> {
-            if (gifImageView.getVisibility() == View.VISIBLE) {
-                gifImageView.setVisibility(View.INVISIBLE);
+            if (gifImageView.getVisibility() == VISIBLE) {
+                gifImageView.setVisibility(INVISIBLE);
             }
         });
     }
 
     private void visibleMic() {
         activity.runOnUiThread(() -> {
-            if (gifImageView.getVisibility() == View.INVISIBLE) {
-                gifImageView.setVisibility(View.VISIBLE);
+            if (gifImageView.getVisibility() == INVISIBLE) {
+                gifImageView.setVisibility(VISIBLE);
             }
         });
     }
@@ -293,7 +363,9 @@ public class MediaStreamWebRTC {
     public void offer() {
         MediaConstraints mediaConstraints = new MediaConstraints();
         MediaStream mediaStream = factory.createLocalMediaStream("ARDAMS");
-        mediaStream.addTrack(videoTrackFromCamera);
+        if (videoConfig != null) {
+            mediaStream.addTrack(videoTrackFromCamera);
+        }
         mediaStream.addTrack(audioTrackFromMicrophone);
         this.peerConnection.addStream(mediaStream);
 
@@ -320,9 +392,8 @@ public class MediaStreamWebRTC {
                     JSONObject audio = new JSONObject();
                     audio.put("sampleRate", 16000);
                     mediaConfig.put("audio", audio);
-                    mediaConfig.put("video", false);
+                    mediaConfig.put("video", videoConfig == null ? false : true);
                     message.put("mode", mediaConfig);
-//                    message.put("info", userInfo);
 
                     Log.d(TAG, "MediaConfig : " + mediaConfig);
                     wsClient.sendMessage(message.toString());

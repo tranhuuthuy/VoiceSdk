@@ -43,6 +43,10 @@ dependencies {
 
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.+'
 
+    implementation 'de.hdodenhof:circleimageview:2.1.0'
+
+    implementation 'net.yslibrary.keyboardvisibilityevent:keyboardvisibilityevent:2.3.0'
+
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity
