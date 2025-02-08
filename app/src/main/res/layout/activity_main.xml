@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:keepScreenOn="true"
     android:fillViewport="true">
 
 
-    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/chat_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -33,7 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_marginBottom="10dp"
-            app:layout_constraintBottom_toTopOf="@id/mic_key"
+            app:layout_constraintBottom_toTopOf="@id/hintSpeak"
             app:layout_constraintTop_toBottomOf="@id/back"
             app:layout_constraintVertical_bias="0.0"
             tools:layout_editor_absoluteX="0dp" />
@@ -132,6 +133,23 @@
 
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/hintSpeak"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginRight="30dp"
+            android:layout_marginLeft="30dp"
+            android:padding="6dp"
+            android:text="Tôi đang nghe ..."
+            android:textSize="16dp"
+            android:lineHeight="24dp"
+            android:textAlignment="center"
+            android:textColor="#EE0033"
+            app:layout_constraintBottom_toTopOf="@+id/mic_key"
+            app:layout_constraintTop_toBottomOf="@id/viewBackground" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/mic_key"
@@ -139,7 +157,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="30dp"
             android:layout_marginRight="30dp"
-            android:layout_marginBottom="48dp"
+            android:layout_marginBottom="30dp"
             android:animateLayoutChanges="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -160,8 +178,8 @@
 
             <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/microphone"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:layout_marginLeft="5dp"
                 android:background="@drawable/microphone"
                 android:src="@mipmap/ic_sw_foreground"
@@ -241,16 +259,16 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <pl.droidsonroids.gif.GifImageView
-            android:id="@+id/mic"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginEnd="36dp"
-            android:background="@drawable/background_mic"
-            android:src="@drawable/podcast"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+<!--        <pl.droidsonroids.gif.GifImageView-->
+<!--            android:id="@+id/mic"-->
+<!--            android:layout_width="50dp"-->
+<!--            android:layout_height="50dp"-->
+<!--            android:layout_marginTop="20dp"-->
+<!--            android:layout_marginEnd="36dp"-->
+<!--            android:background="@drawable/background_mic"-->
+<!--            android:src="@drawable/podcast"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"-->
+<!--            app:layout_constraintTop_toTopOf="parent" />-->
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

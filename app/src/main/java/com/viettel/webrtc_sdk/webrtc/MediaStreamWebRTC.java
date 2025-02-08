@@ -6,14 +6,11 @@ import static android.view.View.VISIBLE;
 import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
+import android.os.PowerManager;
 import android.util.Log;
-import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ProgressBar;
-import android.widget.ScrollView;
 
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -24,10 +21,10 @@ import com.makeramen.roundedimageview.RoundedImageView;
 import com.viettel.webrtc_sdk.R;
 import com.viettel.webrtc_sdk.adapters.MessageAdapter;
 import com.viettel.webrtc_sdk.models.Message;
+import com.viettel.webrtc_sdk.utils.MicrophoneRunnable;
 import com.viettel.webrtc_sdk.utils.VideoConfig;
 
 import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
-import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEventListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,6 +53,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import pl.droidsonroids.gif.GifImageView;
@@ -74,12 +72,12 @@ public class MediaStreamWebRTC {
     private Activity activity;
     RecyclerView recyclerView;
     ProgressBar progressBar;
-    GifImageView gifImageView;
     RoundedImageView buttonKeyBoard;
     EditText inputText;
     AppCompatImageView inputSent;
 
     ConstraintLayout frameMicrophone;
+    MicrophoneRunnable micRunnable;
     private EglBase rootEglBase;
     private List<PeerConnection.IceServer> iceServers;
     private VideoTrack videoTrackFromCamera;
@@ -89,6 +87,7 @@ public class MediaStreamWebRTC {
     private PeerConnectionFactory factory;
     private PeerConnection peerConnection;
     private WsClientToSignalingServer wsClient;
+
 
     public MediaStreamWebRTC(Activity activity, String uriToSignalingServer, int timeout,
                              VideoConfig videoConfig,
@@ -105,10 +104,24 @@ public class MediaStreamWebRTC {
 
         initViewText();
 
+//        // To acquire a WakeLock - don't sleep screen
+//        PowerManager powerManager = (PowerManager) activity.getApplicationContext().getSystemService(Context.POWER_SERVICE);
+//        PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag");
+//        wakeLock.acquire();
+
         wsClient = new WsClientToSignalingServer(uriToSignalingServer, timeout) {
             @Override
             public void onMessage(String message) {
                 handlerTextMessage(message);
+            }
+
+            @Override
+            public void close() {
+                super.close();
+                // To release the WakeLock
+//                if (wakeLock.isHeld()) {
+//                    wakeLock.release();
+//                }
             }
         };
         wsClient.connect();
@@ -135,12 +148,21 @@ public class MediaStreamWebRTC {
         activity.runOnUiThread(() -> {
             recyclerView = activity.findViewById(R.id.chatRecyclerView);
             progressBar = activity.findViewById(R.id.progressBar);
-            gifImageView = activity.findViewById(R.id.mic);
             buttonKeyBoard = activity.findViewById(R.id.keyboard);
             inputText = activity.findViewById(R.id.inputMessage);
             inputSent = activity.findViewById(R.id.sent);
             frameMicrophone = activity.findViewById(R.id.mic_key);
-            initAction();
+            ArrayList<RoundedImageView> eclipse = new ArrayList<>(Arrays.asList(new RoundedImageView[]{
+                    activity.findViewById(R.id.microphone_line),
+                    activity.findViewById(R.id.microphone_line_2),
+                    activity.findViewById(R.id.microphone_line_3),
+            }));
+
+            micRunnable = new MicrophoneRunnable(activity, eclipse,
+                    activity.findViewById(R.id.microphone), activity.findViewById(R.id.hintSpeak));
+            micRunnable.start();
+
+//            initAction();
 
             ArrayList<Message> messages = new ArrayList<>();
             MessageAdapter messageAdapter = new MessageAdapter(messages);
@@ -345,19 +367,12 @@ public class MediaStreamWebRTC {
     }
 
     private void invisibleMic() {
-        activity.runOnUiThread(() -> {
-            if (gifImageView.getVisibility() == VISIBLE) {
-                gifImageView.setVisibility(INVISIBLE);
-            }
-        });
+        micRunnable.setVisible(false);
+        Log.d(TAG, "Microphone Runnable is set invisible");
     }
 
     private void visibleMic() {
-        activity.runOnUiThread(() -> {
-            if (gifImageView.getVisibility() == INVISIBLE) {
-                gifImageView.setVisibility(VISIBLE);
-            }
-        });
+        micRunnable.setVisible(true);
     }
 
     public void offer() {
