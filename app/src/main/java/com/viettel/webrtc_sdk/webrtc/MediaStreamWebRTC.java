@@ -17,11 +17,13 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.gson.Gson;
 import com.makeramen.roundedimageview.RoundedImageView;
 import com.viettel.webrtc_sdk.R;
 import com.viettel.webrtc_sdk.adapters.MessageAdapter;
 import com.viettel.webrtc_sdk.models.Message;
 import com.viettel.webrtc_sdk.utils.MicrophoneRunnable;
+import com.viettel.webrtc_sdk.utils.UserInfo;
 import com.viettel.webrtc_sdk.utils.VideoConfig;
 
 import org.json.JSONException;
@@ -63,7 +65,7 @@ public class MediaStreamWebRTC {
     public static final int FPS_DEFAULT = 30;
     private VideoConfig videoConfig;
     private String firstText;
-    private JSONObject userInfo;
+    private UserInfo userInfo;
 
     private Activity activity;
     RecyclerView recyclerView;
@@ -89,12 +91,9 @@ public class MediaStreamWebRTC {
 
     public MediaStreamWebRTC(Activity activity, String uriToSignalingServer, int timeout,
                              VideoConfig videoConfig,
-                             JSONObject userInfo, String firstText,
-                             TurnServer turnServer) throws URISyntaxException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+                             UserInfo userInfo, String firstText) throws URISyntaxException{
         this.activity = activity;
         this.iceServers = new ArrayList<>();
-        assert turnServer != null : "TurnServer is NOT null";
-        addIceServer(String.format("turn:%s:%d", turnServer.getHost(), turnServer.getPort()), turnServer.getUsername(), turnServer.getPassword());
         this.videoConfig = videoConfig;
         this.userInfo = userInfo;
         this.firstText = firstText == null || firstText.isEmpty() ? "Xin chào, tôi có thể giúp gì được cho bạn !" : firstText;
@@ -111,7 +110,6 @@ public class MediaStreamWebRTC {
                 super.close();
             }
         };
-        wsClient.connect();
 
 
         initializeSurfaceViews();
@@ -122,8 +120,6 @@ public class MediaStreamWebRTC {
             createVideoTrackFromCameraAndShowIt();
         }
         createAudioTrackFromMicrophone();
-
-        initializePeerConnections();
     }
 
     private void addIceServer(String iceServer, String user, String password) { // "stun:stun.l.google.com:19302"
@@ -150,13 +146,14 @@ public class MediaStreamWebRTC {
             // check android version
             int sdkVersion = android.os.Build.VERSION.SDK_INT;
             Log.d(TAG, "Android API SDK : " + sdkVersion);
+            micRunnable = new MicrophoneRunnable(activity, eclipse,
+                    activity.findViewById(R.id.microphone), activity.findViewById(R.id.hintSpeak));
             if (sdkVersion > Build.VERSION_CODES.P) {
-                micRunnable = new MicrophoneRunnable(activity, eclipse,
-                        activity.findViewById(R.id.microphone), activity.findViewById(R.id.hintSpeak));
-                micRunnable.start();
+                micRunnable.setAudioRecorder(true);
             } else {
                 Log.w(TAG, "Android API SDK " + sdkVersion + " <= " + Build.VERSION_CODES.P);
             }
+            micRunnable.start();
 
             initAction();
 
@@ -311,6 +308,16 @@ public class MediaStreamWebRTC {
             JSONObject obj = new JSONObject(message);
             String id = obj.getString("id");
             switch (id) {
+                case "TURN_SERVER":
+                    TurnServer turnServer = new TurnServer(
+                            obj.getString("host"),
+                            obj.getInt("port"),
+                            obj.getString("username"),
+                            obj.getString("password")
+                    );
+                    addIceServer(String.format("turn:%s:%d", turnServer.getHost(), turnServer.getPort()), turnServer.getUsername(), turnServer.getPassword());
+                    initializePeerConnections();
+                    offer();
                 case "PROCESS_SDP_ANSWER":
                     String sdpAnswer = obj.getString("sdpAnswer");
                     peerConnection.setRemoteDescription(new SimpleSdpObserver("Peer-connection setRemoteDescription ANSWER"),
@@ -335,6 +342,9 @@ public class MediaStreamWebRTC {
                             e.printStackTrace();
                         }
                     });
+                    break;
+                case "END_ANSWER_MESSAGE":
+                    activity.runOnUiThread(() -> frameStop.setVisibility(INVISIBLE));
                     break;
                 case "OPEN_SPEECH":
                     invisibleProgressBar();
@@ -379,9 +389,7 @@ public class MediaStreamWebRTC {
     }
 
     private void invisibleMic() {
-        if (micRunnable != null) {
-            micRunnable.setVisible(false);
-        }
+        micRunnable.setVisible(false);
         if (frameStop.getVisibility() == VISIBLE) {
             activity.runOnUiThread(() -> frameStop.setVisibility(INVISIBLE));
         }
@@ -389,12 +397,10 @@ public class MediaStreamWebRTC {
     }
 
     private void visibleMic() {
-        if (micRunnable != null) {
-            micRunnable.setVisible(true);
-        }
+        micRunnable.setVisible(true);
     }
 
-    public void offer() {
+    private void offer() {
         MediaConstraints mediaConstraints = new MediaConstraints();
         MediaStream mediaStream = factory.createLocalMediaStream("ARDAMS");
         if (videoConfig != null) {
@@ -428,6 +434,10 @@ public class MediaStreamWebRTC {
                     mediaConfig.put("audio", audio);
                     mediaConfig.put("video", videoConfig == null ? false : true);
                     message.put("mode", mediaConfig);
+                    if (userInfo != null) {
+                        Gson gson = new Gson();
+                        message.put("userInfo", gson.toJson(userInfo));
+                    }
 
                     Log.d(TAG, "MediaConfig : " + mediaConfig);
                     wsClient.sendMessage(message.toString());
@@ -492,5 +502,9 @@ public class MediaStreamWebRTC {
         );
 
         return peerConn;
+    }
+
+    public void connect() throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        wsClient.connect();
     }
 }

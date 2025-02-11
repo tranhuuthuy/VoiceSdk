@@ -25,11 +25,17 @@ public class MicrophoneRunnable implements Runnable {
     private AtomicBoolean isVisible;
     private Thread thread;
 
+    private boolean isAudioRecorder;
+
     private static final int SAMPLE_RATE = 16000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private AudioRecord audioRecord;
     private int bufferSize;
+
+    public void setAudioRecorder(boolean audioRecorder) {
+        isAudioRecorder = audioRecorder;
+    }
 
     @SuppressLint("MissingPermission")
     public MicrophoneRunnable(Activity activity, ArrayList<RoundedImageView> eclipse, RoundedImageView circle, TextView textView) {
@@ -38,19 +44,15 @@ public class MicrophoneRunnable implements Runnable {
         this.circle = circle;
         this.textView = textView;
         this.thread = new Thread(this);
-        this.bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);
-        this.audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, bufferSize);
         this.isVisible = new AtomicBoolean(true);
     }
 
+
+
+    @SuppressLint("MissingPermission")
     @Override
     public void run() {
         try {
-            short[] audioBuffer = new short[bufferSize];
-            float[] waveform = new float[bufferSize];
-            int width = 400;
-            float maxScale = 3f, minScale = 1f;
-
             new Thread(() -> {
                 try {
                     while (true) {
@@ -74,21 +76,30 @@ public class MicrophoneRunnable implements Runnable {
                 }
             }).start();
 
-            audioRecord.startRecording();
-            while (true) {
-                int read = audioRecord.read(audioBuffer, 0, bufferSize);
-                float sumWaveForm = 0f;
-                for (int i = 0; i < read; i++) {
-                    waveform[i] = audioBuffer[i];
-                    sumWaveForm += Math.abs(waveform[i]);
-                }
-                float avgWaveForm = (sumWaveForm /read) / width;
-                float sc = avgWaveForm >= maxScale ? maxScale : (avgWaveForm <= minScale ? minScale : avgWaveForm);
-                if(isVisible.get()) {
-                    activity.runOnUiThread(() -> {
-                        circle.setScaleX(sc);
-                        circle.setScaleY(sc);
-                    });
+            if(isAudioRecorder) {
+                this.bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);
+                this.audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, bufferSize);
+                short[] audioBuffer = new short[bufferSize];
+                float[] waveform = new float[bufferSize];
+                int width = 400;
+                float maxScale = 3f, minScale = 1f;
+
+                audioRecord.startRecording();
+                while (true) {
+                    int read = audioRecord.read(audioBuffer, 0, bufferSize);
+                    float sumWaveForm = 0f;
+                    for (int i = 0; i < read; i++) {
+                        waveform[i] = audioBuffer[i];
+                        sumWaveForm += Math.abs(waveform[i]);
+                    }
+                    float avgWaveForm = (sumWaveForm / read) / width;
+                    float sc = avgWaveForm >= maxScale ? maxScale : (avgWaveForm <= minScale ? minScale : avgWaveForm);
+                    if (isVisible.get()) {
+                        activity.runOnUiThread(() -> {
+                            circle.setScaleX(sc);
+                            circle.setScaleY(sc);
+                        });
+                    }
                 }
             }
         }catch (Exception e){

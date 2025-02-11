@@ -1,8 +1,10 @@
 package com.viettel.webrtc_sdk.activities;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,9 +21,12 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.viettel.webrtc_sdk.R;
+import com.viettel.webrtc_sdk.utils.UserInfo;
 import com.viettel.webrtc_sdk.utils.VideoConfig;
 import com.viettel.webrtc_sdk.webrtc.MediaStreamWebRTC;
-import com.viettel.webrtc_sdk.webrtc.TurnServer;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,16 +60,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void process() {
         try {
-            TurnServer turnServer = new TurnServer("171.244.195.82", 8889, "thuyth2", "1qaz");
+            Properties properties = loadProperties(getApplicationContext());
+            String signalingServer = properties.getProperty("signaling_server");
+            int timeout = Integer.parseInt(properties.getProperty("timeout"));
+            Log.d("SignalingServer", "Connect to signaling server " + signalingServer);
+            UserInfo userInfo = new UserInfo();
+            userInfo.getProperties().put("domain", "Viettel Home");
+
             MediaStreamWebRTC mediaStreamWebRTC = new MediaStreamWebRTC(
                     this,
-                    "wss://171.244.195.82:8111/voicebotv2",
-                    20000,
+                    signalingServer,
+                    timeout,
                     videoConfig,
-                    null, null,
-                    turnServer
+                    userInfo, null
             );
-            mediaStreamWebRTC.offer();
+            mediaStreamWebRTC.connect();
         } catch (Exception e) {
             Log.d(MediaStreamWebRTC.TAG, "MediaStreamWebRTC websocket error");
         }
@@ -127,5 +137,17 @@ public class MainActivity extends AppCompatActivity {
         // Create and show the dialog
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
+    }
+
+    private Properties loadProperties(Context context) {
+        Properties properties = new Properties();
+        AssetManager assetManager = context.getAssets();
+        try (InputStream inputStream = assetManager.open("config.properties")) {
+            properties.load(inputStream);
+        } catch (IOException e) {
+            Log.e("PROPERTIES", "Error loading properties file: " + e.getMessage());
+            return null;
+        }
+        return properties;
     }
 }
