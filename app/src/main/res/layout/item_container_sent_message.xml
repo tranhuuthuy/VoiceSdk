@@ -51,6 +51,7 @@
                 android:text="Hãy giới thiệu về các gói cước 5G của Viettel"
                 android:textColor="@color/white"
                 android:textDirection="ltr"
+                android:textSize="@dimen/text_sent_size"
                 app:layout_constraintTop_toTopOf="parent" />
 
         </LinearLayout>
@@ -63,7 +64,7 @@
         android:layout_height="wrap_content"
         android:text="HH:mm:ss"
         android:textColor="@color/black"
-        android:textSize="8dp"
+        android:textSize="@dimen/text_time_size"
         app:layout_constraintTop_toBottomOf="@id/imageProfileUser"
         app:layout_constraintEnd_toEndOf="parent"
         />

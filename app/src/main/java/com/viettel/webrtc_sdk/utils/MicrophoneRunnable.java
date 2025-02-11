@@ -8,7 +8,6 @@ import android.app.Activity;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
-import android.widget.EditText;
 import android.widget.TextView;
 
 import com.makeramen.roundedimageview.RoundedImageView;
@@ -26,7 +25,7 @@ public class MicrophoneRunnable implements Runnable {
     private AtomicBoolean isVisible;
     private Thread thread;
 
-    private static final int SAMPLE_RATE = 44100;
+    private static final int SAMPLE_RATE = 16000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private AudioRecord audioRecord;

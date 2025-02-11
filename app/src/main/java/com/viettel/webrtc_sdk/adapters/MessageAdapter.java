@@ -18,15 +18,20 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        Message.Type type = viewType == 0 ? Message.Type.USER : Message.Type.BOT;
+        Message.Type type = viewType == 0 ? Message.Type.USER : (viewType == 1 ? Message.Type.BOT : Message.Type.WAIT_ANSWER);
 
-        if(type == Message.Type.USER) {
+        if (type == Message.Type.USER) {
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_container_sent_message, parent, false);
             return new MessageAdapter.ViewHolder(view, type);
-        }else if(type == Message.Type.BOT){
+        } else if (type == Message.Type.BOT) {
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_container_received_message, parent, false);
+            return new MessageAdapter.ViewHolder(view, type);
+        }
+        if (type == Message.Type.WAIT_ANSWER) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_container_wait, parent, false);
             return new MessageAdapter.ViewHolder(view, type);
         }
         return null;
@@ -34,9 +39,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.getTextView().setText(messages.get(position).getContent());
-        SimpleDateFormat sdp = new SimpleDateFormat("HH:mm:ss");
-        holder.getDateTimeView().setText(sdp.format(messages.get(position).getDate()));
+        if (holder.type == Message.Type.BOT || holder.type == Message.Type.USER) {
+            holder.getTextView().setText(messages.get(position).getContent());
+            SimpleDateFormat sdp = new SimpleDateFormat("HH:mm:ss");
+            holder.getDateTimeView().setText(sdp.format(messages.get(position).getDate()));
+        }
     }
 
     @Override
@@ -46,9 +53,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
     @Override
     public int getItemViewType(int position) {
-        if(messages !=null && !messages.isEmpty()){
+        if (messages != null && !messages.isEmpty()) {
             Message message = messages.get(position);
-            return message.getType() == Message.Type.USER ? 0 : 1;
+            return message.getType() == Message.Type.USER ? 0 : (message.getType() == Message.Type.BOT ? 1 : 2);
         }
         return super.getItemViewType(position);
     }
@@ -61,11 +68,11 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
         public ViewHolder(View view, Message.Type type) {
             super(view);
-            this.type  = type;
-            if(type == Message.Type.USER) {
+            this.type = type;
+            if (type == Message.Type.USER) {
                 textView = view.findViewById(R.id.textSentMessage);
                 dateTimeView = view.findViewById(R.id.textSentDateTime);
-            }else {
+            } else if (type == Message.Type.BOT) {
                 textView = view.findViewById(R.id.textReceivedMessage);
                 dateTimeView = view.findViewById(R.id.textReceivedDateTime);
             }
@@ -81,7 +88,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     }
 
 
-
     private ArrayList<Message> messages;
 
     public MessageAdapter(ArrayList<Message> messages) {
@@ -92,7 +98,16 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
         messages = new ArrayList<>();
     }
 
-    public void addMessage(Message message){
+    public void addMessage(Message message) {
         messages.add(message);
+    }
+
+    public void removeLastWaitMessage() {
+        if (messages != null && !messages.isEmpty()) {
+            Message mes = messages.get(messages.size() - 1);
+            if (mes.getType() == Message.Type.WAIT_ANSWER) {
+                messages.remove(mes);
+            }
+        }
     }
 }

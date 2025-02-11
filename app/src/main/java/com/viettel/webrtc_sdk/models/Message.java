@@ -9,7 +9,7 @@ public class Message {
     private Type type; // 0 - user, 1-bot
 
     public enum Type{
-        USER, BOT
+        USER, BOT, WAIT_ANSWER
     }
 
     public Message(String content, Type type) {

@@ -6,11 +6,11 @@ import static android.view.View.VISIBLE;
 import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
-import android.os.PowerManager;
+import android.os.Build;
 import android.util.Log;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -23,8 +23,6 @@ import com.viettel.webrtc_sdk.adapters.MessageAdapter;
 import com.viettel.webrtc_sdk.models.Message;
 import com.viettel.webrtc_sdk.utils.MicrophoneRunnable;
 import com.viettel.webrtc_sdk.utils.VideoConfig;
-
-import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,8 +54,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import pl.droidsonroids.gif.GifImageView;
-
 public class MediaStreamWebRTC {
     public static final String TAG = "MediaStreamWebRTC";
     private static final String VIDEO_TRACK_ID = "01";
@@ -77,7 +73,9 @@ public class MediaStreamWebRTC {
     AppCompatImageView inputSent;
 
     ConstraintLayout frameMicrophone;
+    ConstraintLayout frameStop;
     MicrophoneRunnable micRunnable;
+    TextView textStop;
     private EglBase rootEglBase;
     private List<PeerConnection.IceServer> iceServers;
     private VideoTrack videoTrackFromCamera;
@@ -99,15 +97,8 @@ public class MediaStreamWebRTC {
         addIceServer(String.format("turn:%s:%d", turnServer.getHost(), turnServer.getPort()), turnServer.getUsername(), turnServer.getPassword());
         this.videoConfig = videoConfig;
         this.userInfo = userInfo;
-
         this.firstText = firstText == null || firstText.isEmpty() ? "Xin chào, tôi có thể giúp gì được cho bạn !" : firstText;
-
         initViewText();
-
-//        // To acquire a WakeLock - don't sleep screen
-//        PowerManager powerManager = (PowerManager) activity.getApplicationContext().getSystemService(Context.POWER_SERVICE);
-//        PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag");
-//        wakeLock.acquire();
 
         wsClient = new WsClientToSignalingServer(uriToSignalingServer, timeout) {
             @Override
@@ -118,10 +109,6 @@ public class MediaStreamWebRTC {
             @Override
             public void close() {
                 super.close();
-                // To release the WakeLock
-//                if (wakeLock.isHeld()) {
-//                    wakeLock.release();
-//                }
             }
         };
         wsClient.connect();
@@ -152,17 +139,26 @@ public class MediaStreamWebRTC {
             inputText = activity.findViewById(R.id.inputMessage);
             inputSent = activity.findViewById(R.id.sent);
             frameMicrophone = activity.findViewById(R.id.mic_key);
+            frameStop = activity.findViewById(R.id.stop_bg);
+            textStop = activity.findViewById(R.id.text_stop);
             ArrayList<RoundedImageView> eclipse = new ArrayList<>(Arrays.asList(new RoundedImageView[]{
                     activity.findViewById(R.id.microphone_line),
                     activity.findViewById(R.id.microphone_line_2),
                     activity.findViewById(R.id.microphone_line_3),
             }));
 
-            micRunnable = new MicrophoneRunnable(activity, eclipse,
-                    activity.findViewById(R.id.microphone), activity.findViewById(R.id.hintSpeak));
-            micRunnable.start();
+            // check android version
+            int sdkVersion = android.os.Build.VERSION.SDK_INT;
+            Log.d(TAG, "Android API SDK : " + sdkVersion);
+            if (sdkVersion > Build.VERSION_CODES.P) {
+                micRunnable = new MicrophoneRunnable(activity, eclipse,
+                        activity.findViewById(R.id.microphone), activity.findViewById(R.id.hintSpeak));
+                micRunnable.start();
+            } else {
+                Log.w(TAG, "Android API SDK " + sdkVersion + " <= " + Build.VERSION_CODES.P);
+            }
 
-//            initAction();
+            initAction();
 
             ArrayList<Message> messages = new ArrayList<>();
             MessageAdapter messageAdapter = new MessageAdapter(messages);
@@ -177,25 +173,36 @@ public class MediaStreamWebRTC {
     }
 
     private void initAction() {
-        //action keyboard on/off
-        KeyboardVisibilityEvent.setEventListener(activity, isOpen -> {
-            if (isOpen) {
-                onKeyboardShown();
-            } else {
-                onKeyboardHidden();
+        frameStop.setOnClickListener(v -> {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("id", "STOP_PLAYING");
+                wsClient.sendMessage(obj.toString());
+                frameStop.setVisibility(INVISIBLE);
+            } catch (Exception e) {
+                Log.e(TAG, "Stop playing error");
             }
         });
 
-        buttonKeyBoard.setOnClickListener(v -> {
-            inputText.setVisibility(VISIBLE);
-            inputSent.setVisibility(VISIBLE);
-            frameMicrophone.setVisibility(INVISIBLE);
-            inputText.requestFocus();
-
-            // Show the keyboard
-            InputMethodManager imm = (InputMethodManager) activity.getApplicationContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.showSoftInput(inputText, InputMethodManager.SHOW_IMPLICIT);
-        });
+//        //action keyboard on/off
+//        KeyboardVisibilityEvent.setEventListener(activity, isOpen -> {
+//            if (isOpen) {
+//                onKeyboardShown();
+//            } else {
+//                onKeyboardHidden();
+//            }
+//        });
+//
+//        buttonKeyBoard.setOnClickListener(v -> {
+//            inputText.setVisibility(VISIBLE);
+//            inputSent.setVisibility(VISIBLE);
+//            frameMicrophone.setVisibility(INVISIBLE);
+//            inputText.requestFocus();
+//
+//            // Show the keyboard
+//            InputMethodManager imm = (InputMethodManager) activity.getApplicationContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+//            imm.showSoftInput(inputText, InputMethodManager.SHOW_IMPLICIT);
+//        });
     }
 
     private void onKeyboardShown() {
@@ -348,10 +355,15 @@ public class MediaStreamWebRTC {
         String type = message.getString("type");
         String content = message.getString("content");
         MessageAdapter messageAdapter = (MessageAdapter) recyclerView.getAdapter();
+        messageAdapter.removeLastWaitMessage();
+
         if ("user".equals(type)) {
             messageAdapter.addMessage(new Message(content, Message.Type.USER));
+            messageAdapter.addMessage(new Message(content, Message.Type.WAIT_ANSWER));
+            activity.runOnUiThread(() -> frameStop.setVisibility(INVISIBLE));
         } else if ("bot".equals(type)) {
             messageAdapter.addMessage(new Message(content, Message.Type.BOT));
+            activity.runOnUiThread(() -> frameStop.setVisibility(VISIBLE));
         }
         messageAdapter.notifyDataSetChanged();
         recyclerView.scrollToPosition(messageAdapter.getItemCount() - 1);
@@ -367,12 +379,19 @@ public class MediaStreamWebRTC {
     }
 
     private void invisibleMic() {
-        micRunnable.setVisible(false);
+        if (micRunnable != null) {
+            micRunnable.setVisible(false);
+        }
+        if (frameStop.getVisibility() == VISIBLE) {
+            activity.runOnUiThread(() -> frameStop.setVisibility(INVISIBLE));
+        }
         Log.d(TAG, "Microphone Runnable is set invisible");
     }
 
     private void visibleMic() {
-        micRunnable.setVisible(true);
+        if (micRunnable != null) {
+            micRunnable.setVisible(true);
+        }
     }
 
     public void offer() {

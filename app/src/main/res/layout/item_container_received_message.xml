@@ -25,23 +25,26 @@
         android:layout_marginLeft="5dp"
         app:layout_constraintStart_toEndOf="@id/imageProfile"
         tools:ignore="MissingConstraints">
+
         <TextView
-            android:layout_weight="0.25"
             android:id="@+id/textReceivedMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Xin chào. Tôi là Vian, trợ lý ảo đáng tin cậy của Viettel. Bạn cần giúp gì hôm nay ?"
-            android:background="@drawable/background_received_message"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:paddingRight="5dp"
-            android:paddingLeft="5dp"
-            android:lineSpacingExtra="4dp"
             android:layout_marginRight="10dp"
-            android:textDirection="ltr"
+            android:layout_weight="0.25"
+            android:background="@drawable/background_received_message"
+            android:lineSpacingExtra="4dp"
+            android:paddingLeft="5dp"
+            android:paddingTop="10dp"
+            android:paddingRight="5dp"
+            android:paddingBottom="10dp"
+            android:textSize="@dimen/text_receive_size"
+            android:text="Xin chào. Tôi là Vian, trợ lý ảo đáng tin cậy của Viettel. Bạn cần giúp gì hôm nay ?"
             android:textColor="@color/black"
+            android:textDirection="ltr"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
@@ -54,7 +57,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:textColor="@color/black"
-        android:textSize="8dp"
+        android:textSize="@dimen/text_time_size"
         android:text="HH:mm:ss"
         android:layout_marginLeft="4dp"
         app:layout_constraintStart_toStartOf="parent"

@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:keepScreenOn="true"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:keepScreenOn="true">
 
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -52,6 +52,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textSize="@dimen/text_title_size"
             android:text="Trợ lý ảo VoiceBot"
             android:textColor="@color/black"
             android:textStyle="bold"
@@ -111,9 +112,9 @@
                 android:inputType="textMultiLine"
                 android:padding="12dp"
                 android:textColor="@color/black"
-                android:visibility="invisible"
                 android:textColorHint="@color/material_on_background_emphasis_high_type"
                 android:textSize="12dp"
+                android:visibility="invisible"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
 
@@ -137,17 +138,17 @@
             android:id="@+id/hintSpeak"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/white"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginRight="30dp"
             android:layout_marginLeft="30dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="30dp"
+            android:layout_marginBottom="10dp"
+            android:background="@color/white"
+            android:lineHeight="24dp"
             android:padding="6dp"
             android:text="Tôi đang nghe ..."
-            android:textSize="16dp"
-            android:lineHeight="24dp"
             android:textAlignment="center"
             android:textColor="#EE0033"
+            android:textSize="@dimen/text_hint_size"
             app:layout_constraintBottom_toTopOf="@+id/mic_key"
             app:layout_constraintTop_toBottomOf="@id/viewBackground" />
 
@@ -162,6 +163,48 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/stop_bg"
+                android:visibility="invisible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <com.makeramen.roundedimageview.RoundedImageView
+                    android:id="@+id/stop"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginLeft="5dp"
+                    android:background="@drawable/backround_image"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:riv_oval="true" />
+
+                <FrameLayout
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:background="#EE0033"
+                    app:layout_constraintBottom_toBottomOf="@+id/stop"
+                    app:layout_constraintEnd_toEndOf="@+id/stop"
+                    app:layout_constraintStart_toStartOf="@+id/stop"
+                    app:layout_constraintTop_toTopOf="@+id/stop" />
+                <TextView
+                    android:id="@+id/text_stop"
+                    android:text="nhấn để dừng"
+                    android:textSize="@dimen/text_stop_size"
+                    android:textAlignment="center"
+                    android:textColor="#EE0033"
+                    android:padding="5dp"
+                    app:layout_constraintTop_toBottomOf="@id/stop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:ignore="MissingConstraints" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
 
             <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/keyboard"
@@ -259,16 +302,16 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-<!--        <pl.droidsonroids.gif.GifImageView-->
-<!--            android:id="@+id/mic"-->
-<!--            android:layout_width="50dp"-->
-<!--            android:layout_height="50dp"-->
-<!--            android:layout_marginTop="20dp"-->
-<!--            android:layout_marginEnd="36dp"-->
-<!--            android:background="@drawable/background_mic"-->
-<!--            android:src="@drawable/podcast"-->
-<!--            app:layout_constraintEnd_toEndOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="parent" />-->
+        <!--        <pl.droidsonroids.gif.GifImageView-->
+        <!--            android:id="@+id/mic"-->
+        <!--            android:layout_width="50dp"-->
+        <!--            android:layout_height="50dp"-->
+        <!--            android:layout_marginTop="20dp"-->
+        <!--            android:layout_marginEnd="36dp"-->
+        <!--            android:background="@drawable/background_mic"-->
+        <!--            android:src="@drawable/podcast"-->
+        <!--            app:layout_constraintEnd_toEndOf="parent"-->
+        <!--            app:layout_constraintTop_toTopOf="parent" />-->
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
