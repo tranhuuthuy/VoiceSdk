@@ -6,6 +6,8 @@ import static android.view.View.VISIBLE;
 import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
 import android.util.Log;
 import android.widget.EditText;
@@ -293,9 +295,17 @@ public class MediaStreamWebRTC {
         Log.d(TAG, "Set SpeakerPhone On");
         // --------------------------------------
 
-        AudioSource audioSource = this.factory.createAudioSource(new MediaConstraints());
+        MediaConstraints audioConstraints = new MediaConstraints();
+        audioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googEchoCancellation", "true"));
+        audioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googNoiseSuppression", "true"));
+
+//        AudioSource audioSource = this.factory.createAudioSource(new MediaConstraints());
+        AudioSource audioSource = this.factory.createAudioSource(audioConstraints);
         this.audioTrackFromMicrophone = this.factory.createAudioTrack(AUDIO_TRACK_ID, audioSource);
         this.audioTrackFromMicrophone.setEnabled(true);
+
+        Log.d(TAG, "NoiseSuppressor : " + NoiseSuppressor.isAvailable());
+        Log.d(TAG, "AcousticEchoCanceler : " + AcousticEchoCanceler.isAvailable());
     }
 
     private void initializePeerConnections() {

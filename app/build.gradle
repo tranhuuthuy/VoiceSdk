@@ -30,6 +30,7 @@ android {
 
 dependencies {
     implementation 'com.infobip:google-webrtc:1.0.0035529'
+//    implementation 'com.infobip:google-webrtc:1.0.43591'
     implementation 'tech.gusavila92:java-android-websocket-client:1.2.2'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
