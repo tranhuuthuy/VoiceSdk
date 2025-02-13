@@ -296,9 +296,12 @@ public class MediaStreamWebRTC {
         // --------------------------------------
 
         MediaConstraints audioConstraints = new MediaConstraints();
-        audioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googEchoCancellation", "true"));
-        audioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googNoiseSuppression", "true"));
-
+        if(AcousticEchoCanceler.isAvailable()) {
+            audioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googEchoCancellation", "true"));
+        }
+        if(NoiseSuppressor.isAvailable()) {
+            audioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googNoiseSuppression", "true"));
+        }
 //        AudioSource audioSource = this.factory.createAudioSource(new MediaConstraints());
         AudioSource audioSource = this.factory.createAudioSource(audioConstraints);
         this.audioTrackFromMicrophone = this.factory.createAudioTrack(AUDIO_TRACK_ID, audioSource);
@@ -328,6 +331,7 @@ public class MediaStreamWebRTC {
                     addIceServer(String.format("turn:%s:%d", turnServer.getHost(), turnServer.getPort()), turnServer.getUsername(), turnServer.getPassword());
                     initializePeerConnections();
                     offer();
+                    break;
                 case "PROCESS_SDP_ANSWER":
                     String sdpAnswer = obj.getString("sdpAnswer");
                     peerConnection.setRemoteDescription(new SimpleSdpObserver("Peer-connection setRemoteDescription ANSWER"),
