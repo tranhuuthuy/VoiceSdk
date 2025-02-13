@@ -5,12 +5,24 @@ import static android.view.View.VISIBLE;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
+import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.net.Uri;
+import android.os.Environment;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.makeramen.roundedimageview.RoundedImageView;
+import com.viettel.webrtc_sdk.R;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -121,6 +133,7 @@ public class MicrophoneRunnable implements Runnable {
                circle.setVisibility(VISIBLE);
                textView.setVisibility(VISIBLE);
             });
+            playFromAssets(activity.getApplicationContext(), "sound.mp3");
         }else {
             isVisible.set(false);
             activity.runOnUiThread(() -> {
@@ -130,6 +143,31 @@ public class MicrophoneRunnable implements Runnable {
                 circle.setVisibility(INVISIBLE);
                 textView.setVisibility(INVISIBLE);
             });
+        }
+    }
+
+    public void playFromAssets(Context context, String fileName) {
+        try {
+            // Initialize MediaPlayer
+            MediaPlayer mediaPlayer = new MediaPlayer();
+
+            // Get the AssetFileDescriptor for the audio file
+            AssetFileDescriptor assetFileDescriptor = context.getAssets().openFd(fileName);
+            mediaPlayer.setDataSource(assetFileDescriptor.getFileDescriptor(),
+                    assetFileDescriptor.getStartOffset(),
+                    assetFileDescriptor.getLength());
+            assetFileDescriptor.close(); // Close the descriptor
+
+            mediaPlayer.prepare(); // Prepare the player
+            mediaPlayer.start(); // Start playback
+
+            // Optionally, set a listener for when playback is complete
+            mediaPlayer.setOnCompletionListener(mp -> {
+                mp.release(); // Release the MediaPlayer
+            });
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
