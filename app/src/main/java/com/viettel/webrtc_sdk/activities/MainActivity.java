@@ -21,12 +21,12 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.viettel.webrtc_sdk.R;
+import com.viettel.webrtc_sdk.utils.AudioConfig;
+import com.viettel.webrtc_sdk.utils.BusinessUtils;
 import com.viettel.webrtc_sdk.utils.UserInfo;
 import com.viettel.webrtc_sdk.utils.VideoConfig;
 import com.viettel.webrtc_sdk.webrtc.MediaStreamWebRTC;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
+import com.viettel.webrtc_sdk.webrtc.WebRtcAudioRecorder;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -60,19 +60,31 @@ public class MainActivity extends AppCompatActivity {
 
     private void process() {
         try {
-            Properties properties = loadProperties(getApplicationContext());
-            String signalingServer = properties.getProperty("signaling_server");
-            int timeout = Integer.parseInt(properties.getProperty("timeout"));
+            Context context = getApplicationContext();
+
+            // audio config webrtc
+            AudioConfig audioConfig = new AudioConfig(
+                    Integer.parseInt(BusinessUtils.getProperty(getApplicationContext(), "audio_sample_rate")),
+                    false
+            );
+            String signalingServer = BusinessUtils.getProperty(context,"signaling_server");
+            int timeout = Integer.parseInt(BusinessUtils.getProperty(context,"timeout"));
             Log.d("SignalingServer", "Connect to signaling server " + signalingServer);
             UserInfo userInfo = new UserInfo();
-            userInfo.getProperties().put("domain", "Viettel Home");
+            userInfo.getProperties().put("domain", BusinessUtils.getProperty(context,"domain"));
+
+            WebRtcAudioRecorder webRtcAudioRecorder = new WebRtcAudioRecorder(1280) {
+                @Override
+                public void processSamples(short[] samples) {
+
+                }
+            };
 
             MediaStreamWebRTC mediaStreamWebRTC = new MediaStreamWebRTC(
                     this,
-                    signalingServer,
-                    timeout,
-                    videoConfig,
-                    userInfo, null
+                    signalingServer, timeout,
+                    videoConfig, audioConfig,webRtcAudioRecorder,
+                    userInfo
             );
             mediaStreamWebRTC.connect();
         } catch (Exception e) {
@@ -137,17 +149,5 @@ public class MainActivity extends AppCompatActivity {
         // Create and show the dialog
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
-    }
-
-    private Properties loadProperties(Context context) {
-        Properties properties = new Properties();
-        AssetManager assetManager = context.getAssets();
-        try (InputStream inputStream = assetManager.open("config.properties")) {
-            properties.load(inputStream);
-        } catch (IOException e) {
-            Log.e("PROPERTIES", "Error loading properties file: " + e.getMessage());
-            return null;
-        }
-        return properties;
     }
 }

@@ -8,7 +8,6 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
-import android.os.Build;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -24,7 +23,9 @@ import com.makeramen.roundedimageview.RoundedImageView;
 import com.viettel.webrtc_sdk.R;
 import com.viettel.webrtc_sdk.adapters.MessageAdapter;
 import com.viettel.webrtc_sdk.models.Message;
-import com.viettel.webrtc_sdk.utils.MicrophoneRunnable;
+import com.viettel.webrtc_sdk.utils.AudioConfig;
+import com.viettel.webrtc_sdk.utils.BusinessUtils;
+import com.viettel.webrtc_sdk.utils.AnimationMirophoneViewRunnable;
 import com.viettel.webrtc_sdk.utils.UserInfo;
 import com.viettel.webrtc_sdk.utils.VideoConfig;
 
@@ -49,6 +50,8 @@ import org.webrtc.VideoDecoderFactory;
 import org.webrtc.VideoEncoderFactory;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
+import org.webrtc.audio.AudioDeviceModule;
+import org.webrtc.audio.JavaAudioDeviceModule;
 
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -66,20 +69,24 @@ public class MediaStreamWebRTC {
     public static final int VIDEO_RESOLUTION_HEIGHT_DEFAULT = 720;
     public static final int FPS_DEFAULT = 30;
     private VideoConfig videoConfig;
-    private String firstText;
+    private AudioConfig audioConfig;
     private UserInfo userInfo;
 
+    // ----------- start components view android
     private Activity activity;
-    RecyclerView recyclerView;
-    ProgressBar progressBar;
-    RoundedImageView buttonKeyBoard;
-    EditText inputText;
-    AppCompatImageView inputSent;
+    private RecyclerView recyclerView;
+    private ProgressBar progressBar;
+    private RoundedImageView buttonKeyBoard;
+    private EditText inputText;
+    private AppCompatImageView inputSent;
 
-    ConstraintLayout frameMicrophone;
-    ConstraintLayout frameStop;
-    MicrophoneRunnable micRunnable;
-    TextView textStop;
+    private ConstraintLayout frameMicrophone;
+    private ConstraintLayout frameStop;
+    private AnimationMirophoneViewRunnable animationMic;
+    private TextView textStop;
+    // ----------- end components view android
+
+    // ----------- start components webrtc
     private EglBase rootEglBase;
     private List<PeerConnection.IceServer> iceServers;
     private VideoTrack videoTrackFromCamera;
@@ -89,16 +96,23 @@ public class MediaStreamWebRTC {
     private PeerConnectionFactory factory;
     private PeerConnection peerConnection;
     private WsClientToSignalingServer wsClient;
+    private WebRtcAudioRecorder webRtcAudioRecorder;
+    // ----------- end components webrtc
 
 
     public MediaStreamWebRTC(Activity activity, String uriToSignalingServer, int timeout,
-                             VideoConfig videoConfig,
-                             UserInfo userInfo, String firstText) throws URISyntaxException{
+                             VideoConfig videoConfig, AudioConfig audioConfig, WebRtcAudioRecorder webRtcAudioRecorder,
+                             UserInfo userInfo) throws URISyntaxException {
         this.activity = activity;
         this.iceServers = new ArrayList<>();
         this.videoConfig = videoConfig;
+        this.audioConfig = audioConfig;
+        if (webRtcAudioRecorder != null) {
+            this.webRtcAudioRecorder = webRtcAudioRecorder;
+            new Thread(this.webRtcAudioRecorder).start();
+            Log.d(TAG, "WebRtcAudioRecorder is started");
+        }
         this.userInfo = userInfo;
-        this.firstText = firstText == null || firstText.isEmpty() ? "Xin chào, tôi có thể giúp gì được cho bạn !" : firstText;
         initViewText();
 
         wsClient = new WsClientToSignalingServer(uriToSignalingServer, timeout) {
@@ -113,15 +127,7 @@ public class MediaStreamWebRTC {
             }
         };
 
-
         initializeSurfaceViews();
-
-        initializePeerConnectionFactory();
-
-        if (videoConfig != null) {
-            createVideoTrackFromCameraAndShowIt();
-        }
-        createAudioTrackFromMicrophone();
     }
 
     private void addIceServer(String iceServer, String user, String password) { // "stun:stun.l.google.com:19302"
@@ -148,14 +154,9 @@ public class MediaStreamWebRTC {
             // check android version
             int sdkVersion = android.os.Build.VERSION.SDK_INT;
             Log.d(TAG, "Android API SDK : " + sdkVersion);
-            micRunnable = new MicrophoneRunnable(activity, eclipse,
+            animationMic = new AnimationMirophoneViewRunnable(activity, eclipse,
                     activity.findViewById(R.id.microphone), activity.findViewById(R.id.hintSpeak));
-            if (sdkVersion > Build.VERSION_CODES.P) {
-                micRunnable.setAudioRecorder(true);
-            } else {
-                Log.w(TAG, "Android API SDK " + sdkVersion + " <= " + Build.VERSION_CODES.P);
-            }
-            micRunnable.start();
+            animationMic.start();
 
             initAction();
 
@@ -165,6 +166,7 @@ public class MediaStreamWebRTC {
             LinearLayoutManager linearLayoutManager = new LinearLayoutManager(activity.getApplicationContext());
             recyclerView.setLayoutManager(linearLayoutManager);
             recyclerView.setAdapter(messageAdapter);
+            String firstText = BusinessUtils.getProperty(activity.getApplicationContext(), "first_text_bot");
             if (firstText != null && !firstText.isEmpty()) {
                 messages.add(new Message(firstText, Message.Type.BOT));
             }
@@ -252,13 +254,53 @@ public class MediaStreamWebRTC {
         VideoEncoderFactory encoderFactory = new DefaultVideoEncoderFactory(rootEglBase.getEglBaseContext(), true, true);
         VideoDecoderFactory decoderFactory = new DefaultVideoDecoderFactory(rootEglBase.getEglBaseContext());
 
-        this.factory = PeerConnectionFactory.builder()
-                .setOptions(options)
-                .setVideoEncoderFactory(encoderFactory)
-                .setVideoDecoderFactory(decoderFactory)
-                .createPeerConnectionFactory();
+        if (audioConfig != null) {
+            AudioDeviceModule audioDeviceModule = JavaAudioDeviceModule.builder(activity.getApplicationContext())
+                    .setSamplesReadyCallback(audioSamples -> {
+                        if (webRtcAudioRecorder != null) {
+                            try {
+                                byte[] bytes = audioSamples.getData();
+                                short[] samples = BusinessUtils.byteArrayToShortArray(bytes, false);
+                                if(animationMic.getIsVisible()){
+                                    activity.runOnUiThread(() -> animationMicrophoneView(samples));
+                                }
+                                webRtcAudioRecorder.put(samples);
+                            } catch (Exception e) {
+                                Log.e(TAG, "WebRtcAudioRecorder put bytes error");
+                            }
+                        }
+                    })
+                    .setSampleRate(audioConfig.getSampleRate())
+                    .setUseStereoInput(audioConfig.isUseStereo())
+                    .createAudioDeviceModule();
+            this.factory = PeerConnectionFactory.builder()
+                    .setOptions(options)
+                    .setVideoEncoderFactory(encoderFactory)
+                    .setVideoDecoderFactory(decoderFactory)
+                    .setAudioDeviceModule(audioDeviceModule)
+                    .createPeerConnectionFactory();
+            Log.d(TAG, "----> Create PeerConnectionFactory with AudioDeviceModule");
+        } else {
+            this.factory = PeerConnectionFactory.builder()
+                    .setOptions(options)
+                    .setVideoEncoderFactory(encoderFactory)
+                    .setVideoDecoderFactory(decoderFactory)
+                    .createPeerConnectionFactory();
+            Log.d(TAG, "----> Create PeerConnectionFactory without AudioDeviceModule");
+        }
+    }
 
-        Log.d(TAG, "----> Create PeerConnectionFactory");
+    private void animationMicrophoneView(short[] samples) {
+        int width = 400;
+        float maxScale = 3f, minScale = 1f;
+        float sumWaveForm = 0f;
+        for (int i = 0; i < samples.length; i++) {
+            sumWaveForm += Math.abs(samples[i]);
+        }
+        float avgWaveForm = (sumWaveForm / samples.length) / width;
+        float sc = avgWaveForm >= maxScale ? maxScale : (avgWaveForm <= minScale ? minScale : avgWaveForm);
+        animationMic.getCircle().setScaleX(sc);
+        animationMic.getCircle().setScaleY(sc);
     }
 
     private void createVideoTrackFromCameraAndShowIt() {
@@ -296,10 +338,10 @@ public class MediaStreamWebRTC {
         // --------------------------------------
 
         MediaConstraints audioConstraints = new MediaConstraints();
-        if(AcousticEchoCanceler.isAvailable()) {
+        if (AcousticEchoCanceler.isAvailable()) {
             audioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googEchoCancellation", "true"));
         }
-        if(NoiseSuppressor.isAvailable()) {
+        if (NoiseSuppressor.isAvailable()) {
             audioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googNoiseSuppression", "true"));
         }
 //        AudioSource audioSource = this.factory.createAudioSource(new MediaConstraints());
@@ -329,7 +371,13 @@ public class MediaStreamWebRTC {
                             obj.getString("password")
                     );
                     addIceServer(String.format("turn:%s:%d", turnServer.getHost(), turnServer.getPort()), turnServer.getUsername(), turnServer.getPassword());
+                    initializePeerConnectionFactory();
                     initializePeerConnections();
+
+                    if (videoConfig != null) {
+                        createVideoTrackFromCameraAndShowIt();
+                    }
+                    createAudioTrackFromMicrophone();
                     offer();
                     break;
                 case "PROCESS_SDP_ANSWER":
@@ -403,7 +451,7 @@ public class MediaStreamWebRTC {
     }
 
     private void invisibleMic() {
-        micRunnable.setVisible(false);
+        animationMic.setVisible(false);
         if (frameStop.getVisibility() == VISIBLE) {
             activity.runOnUiThread(() -> frameStop.setVisibility(INVISIBLE));
         }
@@ -411,7 +459,7 @@ public class MediaStreamWebRTC {
     }
 
     private void visibleMic() {
-        micRunnable.setVisible(true);
+        animationMic.setVisible(true);
     }
 
     private void offer() {
